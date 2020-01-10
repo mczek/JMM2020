@@ -8,30 +8,149 @@ output: beamer_presentation
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warnings = FALSE
+)
+library(data.table)
+library(tidyverse)
+library(ggthemes)
 ```
 
-## R Markdown
+## Motivation
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
-
-## Slide with Bullets
-
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-## Slide with R Output
-
-```{r cars, echo = TRUE}
-summary(cars)
+```{r}
+knitr::include_graphics("vt_lottery_logo.png")
 ```
 
-## Slide with Plot
+
+
+## Our Questions:
+
+- Is a given game worth playing?
+- If not, how likely is it that it will become worth playing?
+
+## Instant Tickets
+
+- Games are played once
+- Each game never resets
+- Randomness is limited to location of tickets
+
+## An Example:
+
+```{r}
+knitr::include_graphics("Sapphire7s.png")
+```
+
+## Our intuition is correct at the outset
+
+```{r}
+library(kableExtra)
+# options(knitr.table.format = "latex")
+probLoss <- 1- sum(c(1/7, 1/38, 1/33, 1/81, 1/5250, 1/11667, 1/60000))
+
+values <- c(c("Value", 0, 7, 15, 25, 70, 700, 1000, 7777, "Probability"), round(c(probLoss, 1/7, 1/38, 1/33, 1/81, 1/5250, 1/11667, 1/60000), 5))
+pmfX <- matrix(values, 
+               ncol = 2)
+knitr::kable(pmfX) %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+Expected Value = `r c(0, 7, 15, 25, 70, 700, 1000, 7777) %*% c(probLoss, 1/7, 1/38, 1/33, 1/81, 1/5250, 1/11667, 1/60000)` < 5.
+
+## This game is *sometimes* worth playing!
 
 ```{r pressure}
-plot(pressure)
+
+### read in sapphire 7s data first
+fakeData <- fread("/Users/michael/Desktop/Side Projects/VT Lottery/SDDSimulationData.csv") %>%
+  sample_frac(0.001)
+
+nTickets <- 612000
+
+fakeData %>%
+  ggplot(aes(x = tickets, y = Value)) +
+  geom_point() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Expected Value over Time") +
+  theme_classic() +
+  geom_hline(yintercept = 5, color = "red")
 ```
 
+## Let's take a closer look:
+
+```{r}
+
+### zoom in to last 10% of tickets
+fakeData %>%
+  filter(tickets > nTickets*.9/100) %>%
+  ggplot(aes(x = tickets, y = Value)) +
+  geom_point() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Expected Value over Time") +
+  theme_classic() #+
+  # geom_hline(yintercept = 5, color = "red")
+```
+
+## Then make use of the information available to us:
+
+```{r}
+fakeData %>%
+  filter(tickets > nTickets*.9/100) %>%
+  ggplot(aes(x = tickets, y = Value, color = factor(thousands))) +
+  geom_point() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Expected Value over Time") +
+  theme_classic() +
+  scale_color_colorblind() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Expected Value over Time")
+
+
+```
+
+## We have the necessary information to estimate the value of a ticket
+
+```{r}
+fakeData %>%
+  filter(tickets > nTickets*.9/100) %>%
+  ggplot(aes(x = tickets, y = Value, color = factor(thousands))) +
+  geom_quantile(method = "rqss", lambda = 0.1) +
+  scale_color_colorblind() +
+  theme_classic() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Lower Bounds of 90% of simulations")
+```
+
+## Another game:
+
+```{r}
+knitr::include_graphics("win50or100.png")
+```
+
+
+## It's all in the name:
+
+```{r}
+library(kableExtra)
+# options(knitr.table.format = "latex")
+probLoss <- 1- sum(c(1/16, 1/26))
+
+values <- c(c("Value", 0, 50, 100, "Probability"), round(c(probLoss, 1/16, 1/26), 5))
+pmfX <- matrix(values, 
+               ncol = 2)
+knitr::kable(pmfX) %>%
+  kable_styling(c("striped", "bordered"))
+```
+
+Expected Value = `r c(0, 50, 100) %*% c(probLoss, 1/16, 1/26)` < 10.
+
+<!-- Rinse and repeat with win 50 for the first graph and then color -->
+<!-- talk about the perecentage of times each enters the state -->
+<!-- show that they enter at different times -->
