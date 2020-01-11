@@ -65,12 +65,12 @@ Expected Value = `r c(0, 7, 15, 25, 70, 700, 1000, 7777) %*% c(probLoss, 1/7, 1/
 ```{r pressure}
 
 ### read in sapphire 7s data first
-fakeData <- fread("/Users/michael/Desktop/Side Projects/VT Lottery/SDDSimulationData.csv") %>%
+sapphire7s <- fread("/Users/michael/Desktop/Side Projects/VT Lottery/SDDSimulationData.csv") %>%
   sample_frac(0.01)
 
 nTickets <- 612000 ### Need to change
 
-fakeData %>%
+sapphire7s %>%
   ggplot(aes(x = tickets, y = Value)) +
   geom_point() +
   labs(x = "Tickets sold in 100s",
@@ -85,7 +85,7 @@ fakeData %>%
 ```{r}
 
 ### zoom in to last 10% of tickets
-fakeData %>%
+sapphire7s %>%
   filter(tickets > nTickets*.9/100) %>%
   ggplot(aes(x = tickets, y = Value)) +
   geom_point() +
@@ -99,7 +99,7 @@ fakeData %>%
 ## Then make use of the information available to us:
 
 ```{r}
-fakeData %>%
+sapphire7s %>%
   filter(tickets > nTickets*.9/100) %>%
   ggplot(aes(x = tickets, y = Value, color = factor(thousands))) +
   geom_point() +
@@ -119,7 +119,7 @@ fakeData %>%
 ## We have the necessary information to estimate the value of a ticket
 
 ```{r}
-fakeData %>%
+sapphire7s %>%
   filter(tickets > nTickets*.95/100) %>%
   group_by(tickets, factor(thousands)) %>%
   summarize(lower_bound = quantile(Value, 0.1)) %>%
@@ -156,6 +156,35 @@ knitr::kable(pmfX) %>%
 
 Expected Value = `r c(0, 50, 100) %*% c(probLoss, 1/16, 1/26)` < 10.
 
+## This game is also sometimes worth playing!
+
+```{r}
+win50Data <-  fread("/Users/michael/Desktop/Side Projects/VT Lottery/SDDSimulationData.csv") %>%
+  sample_frac(0.01)
+
+win50Data %>%
+  ggplot(aes(x = tickets, y = Value)) +
+  geom_point() +
+  theme_classic() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Expected Value over Time") +
+  geom_hline(yintercept = 10)
+```
+
+
+## But tracking grand prizes isn't helpful
+
+```{r}
+win50Data %>%
+  ggplot(aes(x = tickets, y = Value, color = thousands)) +
+  geom_point() +
+  theme_classic() +
+  labs(x = "Tickets sold in 100s",
+       y = "Expected Value",
+       title = "Expected Value over Time",
+       color = "Grand Prizes Remaining")
+```
 <!-- Rinse and repeat with win 50 for the first graph and then color -->
 <!-- talk about the perecentage of times each enters the state -->
 <!-- show that they enter at different times -->
