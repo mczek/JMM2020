@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 library(data.table)
 library(tidyverse)
 library(ggthemes)
+library(quantreg)
 ```
 
 ## Motivation
@@ -65,9 +66,9 @@ Expected Value = `r c(0, 7, 15, 25, 70, 700, 1000, 7777) %*% c(probLoss, 1/7, 1/
 
 ### read in sapphire 7s data first
 fakeData <- fread("/Users/michael/Desktop/Side Projects/VT Lottery/SDDSimulationData.csv") %>%
-  sample_frac(0.001)
+  sample_frac(0.01)
 
-nTickets <- 612000
+nTickets <- 612000 ### Need to change
 
 fakeData %>%
   ggplot(aes(x = tickets, y = Value)) +
@@ -109,7 +110,8 @@ fakeData %>%
   scale_color_colorblind() +
   labs(x = "Tickets sold in 100s",
        y = "Expected Value",
-       title = "Expected Value over Time")
+       title = "Expected Value over Time",
+       color = "Grand Prizes Remaining")
 
 
 ```
@@ -118,14 +120,17 @@ fakeData %>%
 
 ```{r}
 fakeData %>%
-  filter(tickets > nTickets*.9/100) %>%
-  ggplot(aes(x = tickets, y = Value, color = factor(thousands))) +
-  geom_quantile(method = "rqss", lambda = 0.1) +
+  filter(tickets > nTickets*.95/100) %>%
+  group_by(tickets, factor(thousands)) %>%
+  summarize(lower_bound = quantile(Value, 0.1)) %>%
+  ggplot(aes(x = tickets, y = lower_bound, color = `factor(thousands)`)) +
+  geom_line() +
   scale_color_colorblind() +
   theme_classic() +
   labs(x = "Tickets sold in 100s",
        y = "Expected Value",
-       title = "Lower Bounds of 90% of simulations")
+       title = "Expected Value over Time",
+       color = "Grand Prizes Remaining")
 ```
 
 ## Another game:
